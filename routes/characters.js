@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var https = require('https');
 var querystring = require('querystring');
+var fs = require('fs');
 
 function onCharacterLoaded(data) {
   global.socket.emit("character:loaded", data);

@@ -1,0 +1,3 @@
+[submodule "lib/simulationcraft"]
+	path = lib/simulationcraft
+	url = https://code.google.com/p/simulationcraft/
