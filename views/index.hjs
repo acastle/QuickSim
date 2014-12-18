@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>{{ title }}</title>
+    <title>QuickSim</title>
     <link rel='stylesheet' href='/css/foundation.min.css' />
     <link rel='stylesheet' href='/css/style.css' />
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
   </head>
   <body ng-app="raidTrack">
   <div class="row" ng-controller="RaidTrackController">
@@ -23,7 +24,7 @@
           </div>
         </div>
         <div class="large-12 columns">
-          <button class="button postfix" ng-click="addPlayer(playerName, selectedRealm, selectedRole)">Add</button>
+          <button class="button postfix" ng-click="addPlayer(selectedRealm, playerName)">Add</button>
         </div>
       </fieldset>
     </div>
@@ -38,10 +39,11 @@
             <th>Spec</th>
             <th>Item Level</th>
             <th>DPS Sim</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr ng-repeat="player in players">
+          <tr ng-repeat="player in players track by $index">
             <td ng-bind="player.name"></td>
             <td>
               <span ng-class="getClassIcon(player.class.name)" ></span>
@@ -51,8 +53,19 @@
               <img ng-src="{{ getSpecIcon(player.class.name, player.spec) }}" />
               <span ng-bind="player.spec"></span>
             </td>
-            <td ng-bind="player.items.averageItemLevelEquipped"></td>
-            <td ng-bind="player.dps"></td>
+            <td>
+              <span ng-hide="player.refreshing" ng-bind="player.items.averageItemLevelEquipped"></span>
+              <i class="fa fa-circle-o-notch fa-spin" ng-if="player.refreshing"></i>            
+            </td>
+            <td>
+              <a ng-hide="player.simming" ng-click="showDetails(player)" ng-bind="player.dps"></a>
+              <i class="fa fa-circle-o-notch fa-spin" ng-if="player.simming"></i>            
+            </td>
+            <td>
+              <i class="action-icon fa fa-refresh" ng-click="refreshPlayer(player)"></i>
+              <i class="action-icon fa fa-area-chart" ng-click="simPlayer(player)"></i>
+              <i class="action-icon fa fa-trash" ng-click="deletePlayer(player)"></i>
+            </td>
           </tr>
         </tbody>
       </table>

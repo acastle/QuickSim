@@ -14,14 +14,56 @@ var classes = [
 
 var app = angular.module('raidTrack', []);
 app.controller("RaidTrackController", function($scope, $http, socket){
-  $scope.players = [];
-  $scope.addPlayer = function(player, server, role){
-    $scope.players.push({
-      "name": player,
-      "realm": server
-    });
-    $http.get("/characters/" + server + "/" + player);
+  function findPlayer(realm, name){
+    for(var id in $scope.players) {
+      if ($scope.players[id].realm.toLowerCase() === realm.toLowerCase() &&
+        $scope.players[id].name.toLowerCase() === name.toLowerCase()){
+        return $scope.players[id];
+      }
+    }
   }
+  function save() {
+    localStorage.setItem("quickSimData", JSON.stringify($scope.players));
+  }
+  
+  var loadedData = JSON.parse(localStorage.getItem("quickSimData"));
+  $scope.players = loadedData instanceof Array ? loadedData : [];
+  $scope.showDetails = function(player) {
+    window.location = "/" + player.details;
+  }
+  $scope.addPlayer = function(realm, player){
+    var currentPlayer = findPlayer(realm, player);
+    if (currentPlayer == null){
+      var player = {
+        "name": player,
+        "realm": realm
+      };
+      $scope.players.push(player);
+      $scope.refreshPlayer(player);
+    }
+    
+    $scope.playerName = "";
+  }
+  $scope.refreshPlayer = function(player) {
+    player.refreshing = true;
+    $http.get("/characters/" + player.realm + "/" + player.name);
+  }
+  $scope.deletePlayer = function(player) {
+    var index = $scope.players.indexOf(player);
+    $scope.players.splice(index, 1);
+    save();
+  }
+  $scope.simPlayer = function(player){
+    $http.get("/sim", {
+      method: "GET",
+      params: {
+        realm: player.realm,
+        name: player.name
+      }
+    });
+    player.simming = true;
+  }
+  
   $scope.getSpecIcon = function(className, specName) {
     if (className !== null && specName !== null){
       return "icon-" + className.toLowerCase();
@@ -36,27 +78,40 @@ app.controller("RaidTrackController", function($scope, $http, socket){
 
     return "";
   };
-
+  
+  socket.on("character:simcomplete", function(data) {
+    console.log("Sim Complete: " + data.name);
+    var player = findPlayer(data.realm, data.name);
+    if (player == null)
+      return;
+    $scope.$apply(function(){
+      player.dps = data.dps;
+      player.details = data.details;
+      player.simming = false;
+    });
+    save();
+  });
+  
   socket.on("character:loaded", function(data){
-    console.log(data);
-    for(var id in $scope.players) {
-      if ($scope.players[id].realm.toLowerCase() === data.realm.toLowerCase() &&
-        $scope.players[id].name.toLowerCase() === data.name.toLowerCase()){
-        var spec;
-        for (var i = 0; i < data.talents.length; i++){
-          if (data.talents[i].selected){
-            spec = data.talents[i].spec.name;
-          }
-        }
-        $scope.$apply(function(){
-          $scope.players[id].name = data.name;
-          $scope.players[id].realm = data.realm;
-          $scope.players[id].class = classes[data.class - 1];
-          $scope.players[id].spec = spec;
-          $scope.players[id].items = data.items;
-        });
+    console.log("Loaded: " + data.name);
+    var player = findPlayer(data.realm, data.name);
+    if (player == null)
+      return;
+    var spec;
+    for (var i = 0; i < data.talents.length; i++){
+      if (data.talents[i].selected){
+        spec = data.talents[i].spec.name;
       }
     }
+    $scope.$apply(function(){
+      player.name = data.name;
+      player.realm = data.realm;
+      player.class = classes[data.class - 1];
+      player.spec = spec;
+      player.items = data.items;
+      player.refreshing = false;
+    });
+    save();
   })
 });
 

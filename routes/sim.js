@@ -4,14 +4,13 @@ var https = require('https');
 var querystring = require('querystring');
 var sim = require("../modules/sim");
 
-router.get('/:realm/:name', function(req, res) {
-  var regexp = /^(\W|_)/;
-  if (regexp.match(req.params.name) || regexp.match(req.params.realm)){
+router.get('/', function(req, res) {
+  if (/\W/.test(req.query.name) || /^(\w|')+$/.test(req.query.realm) == false){
     res.send({"queued": false});
     return;
   }
 
-  sim.simulate({realm:req.params.realm, name:req.params.name});
+  sim.simulate({realm:req.query.realm, name:req.query.name});
   res.send({"queued":true});
 });
 
